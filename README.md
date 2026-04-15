@@ -15,14 +15,6 @@
 ## 👨‍🎓 Integrantes:
 - Vitório Stevanatto Compri Paciulo — RM567895
 
-## 👩‍🏫 Professores:
-### Tutor(a)
-- _A preencher_
-
-### Coordenador(a)
-- _A preencher_
-
----
 
 ## 📜 Descrição
 
