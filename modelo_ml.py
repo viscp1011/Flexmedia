@@ -82,9 +82,11 @@ def load_and_engineer(path: Path) -> pd.DataFrame:
 def treinar_engajamento(df: pd.DataFrame) -> dict:
     """
     Treina Random Forest para classificar ALTO (1) vs BAIXO (0) engajamento.
-    Features: dwell_ms, hora_sessao, screen_enc, pos_na_sessao, dia_enc
+    Features: hora_sessao, screen_enc, pos_na_sessao, dia_enc, perfil_enc
+    NOTA: dwell_ms excluído intencionalmente — é a base do target (leakage).
+    O modelo aprende a prever engajamento pelo CONTEXTO da visita.
     """
-    features = ["dwell_ms", "hora_sessao", "screen_enc", "pos_na_sessao", "dia_enc", "perfil_enc"]
+    features = ["hora_sessao", "screen_enc", "pos_na_sessao", "dia_enc", "perfil_enc"]
     X = df[features]
     y = df["engajamento"]
 
