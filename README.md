@@ -25,12 +25,13 @@ O sistema realiza a ingestão dos logs seriais do ESP32, armazena os eventos em 
 **Funcionalidades principais:**
 
 - **Ingestão de logs** do totem ESP32 com validação e deduplicação
-- **Análise estatística** completa: distribuição de tempo por tela, padrões por hora do dia, heatmaps de engajamento
-- **Machine Learning** com Random Forest: classificação de engajamento (ALTO/BAIXO) e predição da próxima tela com métricas formais (F1, precisão, recall, validação cruzada)
+- **Análise estatística** completa: 7 gráficos — distribuição de tempo por tela, padrões por hora do dia, heatmap de engajamento e distribuição de perfis comportamentais
+- **Machine Learning** com Random Forest: classificação de engajamento (ALTO/BAIXO, acurácia 83,5%) e predição da próxima tela (acurácia 71%) com métricas formais (F1, precisão, recall, validação cruzada 5-fold)
 - **Recomendação via Cadeia de Markov**: aprende padrões de navegação e sugere a próxima tela em tempo real
 - **Chat IA integrado**: assistente em linguagem natural que responde perguntas sobre os dados do totem
-- **Dashboard interativo** em Streamlit com 5 abas unificadas
+- **Dashboard interativo** em Streamlit com 5 abas e toggle Oracle / CSV simulado
 - **Simulação de visão computacional** via coluna `presence_detect` (detecção de presença)
+- **Dataset simulado realista**: 2.805 eventos em 300 sessões com 4 perfis comportamentais (passante, curioso, engajado, comparador)
 
 O sistema foi evoluído ao longo de 4 sprints, partindo de uma prova de conceito simples (Sprints 1 e 2) até uma plataforma completa com IA embarcada (Sprints 3 e 4).
 
@@ -50,6 +51,7 @@ Flexmedia/
 │       ├── 04_acessos_por_hora.png
 │       ├── 05_heatmap_hora_tela.png
 │       ├── 06_engajamento_por_tela.png
+│       ├── 07_perfis_usuario.png
 │       ├── 07_feature_importance_engajamento.png
 │       ├── 07_feature_importance_proxima_tela.png
 │       ├── 08_confusion_matrix_engajamento.png
@@ -61,7 +63,7 @@ Flexmedia/
 │   └── .env.example             # Template de credenciais (nunca commitar o .env real)
 │
 ├── document/                    # Dados e documentação
-│   ├── dados_simulados.csv      # Dataset gerado (268 eventos, 35 sessões)
+│   ├── dados_simulados.csv      # Dataset simulado (2.805 eventos, 300 sessões)
 │   ├── logs_telas.txt           # Log serial bruto do ESP32
 │   └── other/
 │
@@ -69,7 +71,7 @@ Flexmedia/
 │
 ├── src/                         # Código-fonte principal
 │   ├── dashboard_flexmedia.py   # Dashboard Streamlit (5 abas)
-│   ├── analise_estatistica.py   # Análise estatística + 6 gráficos
+│   ├── analise_estatistica.py   # Análise estatística + 7 gráficos
 │   ├── modelo_ml.py             # Random Forest (engajamento + próxima tela)
 │   ├── recomendacao.py          # Cadeia de Markov para recomendação
 │   ├── gera_dados.py            # Geração de dataset simulado realista
@@ -142,11 +144,20 @@ Os gráficos são salvos automaticamente em `assets/graficos/`.
 streamlit run src/dashboard_flexmedia.py
 ```
 
-Acesse `http://localhost:8501`. O sistema conecta ao Oracle automaticamente; caso indisponível, usa o CSV local como fallback.
+Acesse `http://localhost:8501`. O sistema conecta ao Oracle automaticamente. Use o toggle **"Usar Oracle DB"** na sidebar para alternar entre dados reais (Oracle) e o dataset simulado com 2.805 eventos.
+
+> **Atalho:** execute `rodar_projeto.bat` na raiz do projeto para instalar dependências, gerar dados e iniciar o dashboard em um único clique (Windows).
 
 ---
 
 ## 🗃 Histórico de lançamentos
+
+* **0.5.0 — Sprint 4 revisado (Abr/2026)**
+  * Dataset ampliado: 2.805 eventos em 300 sessões com 4 perfis comportamentais
+  * Novo gráfico: distribuição de perfis de usuário (pie + bar)
+  * Perfil do usuário adicionado como feature nos modelos Random Forest
+  * Correção de data leakage no modelo de engajamento (acurácia 83,5%)
+  * Toggle Oracle/CSV simulado na sidebar do dashboard
 
 * **0.4.0 — Sprint 4 (Abr/2025)**
   * Cadeia de Markov para recomendação de próxima tela em tempo real
@@ -155,7 +166,7 @@ Acesse `http://localhost:8501`. O sistema conecta ao Oracle automaticamente; cas
   * Dashboard unificado com 5 abas
 
 * **0.3.0 — Sprint 3 (Mar/2025)**
-  * Análise estatística completa com Matplotlib/Seaborn (6 gráficos)
+  * Análise estatística completa com Matplotlib/Seaborn (7 gráficos)
   * Dois modelos Random Forest com métricas formais e validação cruzada
   * Gerador de dados simulados com comportamento realista
   * Segurança: credenciais via variáveis de ambiente (python-dotenv)

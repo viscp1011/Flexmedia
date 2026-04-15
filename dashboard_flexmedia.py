@@ -38,10 +38,8 @@ st.set_page_config(
 
 # ─────────────────────── Carregamento de dados ───────────────────────
 
-@st.cache_data(show_spinner=False)
-def load_data() -> pd.DataFrame:
-    """Carrega dados: tenta Oracle, cai em CSV simulado."""
-    # Tenta Oracle
+def _load_oracle() -> pd.DataFrame | None:
+    """Tenta carregar dados do Oracle. Retorna None se falhar."""
     try:
         import oracledb
         from config import ORACLE_USER, ORACLE_PASSWORD, ORACLE_HOST, ORACLE_PORT, ORACLE_SID, TABLE_NAME
@@ -49,7 +47,6 @@ def load_data() -> pd.DataFrame:
         with oracledb.connect(user=ORACLE_USER, password=ORACLE_PASSWORD, dsn=dsn) as conn:
             df = pd.read_sql(f"SELECT * FROM {TABLE_NAME}", conn)
             df.columns = [c.lower() for c in df.columns]
-            # Adiciona colunas extras que o CSV tem (se não existirem no Oracle)
             if "session_id" not in df.columns:
                 df["session_id"] = 1
             if "hora_sessao" not in df.columns:
@@ -58,11 +55,22 @@ def load_data() -> pd.DataFrame:
                 df["dia_semana"] = "Monday"
             if "presence_detect" not in df.columns:
                 df["presence_detect"] = 1
+            if "perfil_usuario" not in df.columns:
+                df["perfil_usuario"] = "desconhecido"
             return df
     except Exception:
-        pass  # Oracle indisponível → usa CSV
+        return None
 
-    # Fallback: CSV simulado
+
+@st.cache_data(show_spinner=False)
+def load_data(usar_oracle: bool = True) -> pd.DataFrame:
+    """Carrega dados: Oracle se disponível e selecionado, senão CSV simulado."""
+    if usar_oracle:
+        df = _load_oracle()
+        if df is not None:
+            return df
+
+    # CSV simulado
     if not CSV_PATH.exists():
         st.error("Dados não encontrados. Execute gera_dados.py primeiro.")
         st.stop()
@@ -164,11 +172,16 @@ with st.sidebar:
     st.caption("Challenge Flexmedia — FIAP | Sprints 3 & 4")
     st.divider()
 
+    usar_oracle = st.toggle("☁️ Usar Oracle DB", value=True,
+                            help="Ativado: lê da tabela Oracle FIAP. Desativado: usa CSV simulado (2805 eventos).")
+
     with st.spinner("Carregando dados..."):
-        df_raw = load_data()
+        df_raw = load_data(usar_oracle=usar_oracle)
         df, mediana = prepare_data(df_raw)
 
-    fonte = "☁️ Oracle DB" if "id" in df.columns and df["session_id"].nunique() == 1 else "📄 CSV Simulado"
+    # Detecta fonte real: CSV simulado tem coluna perfil_usuario preenchida
+    tem_perfil = "perfil_usuario" in df.columns and (df["perfil_usuario"] != "desconhecido").any()
+    fonte = "📄 CSV Simulado" if tem_perfil else "☁️ Oracle DB"
     st.success(f"Fonte: {fonte}")
     st.metric("Total de eventos", len(df))
     st.metric("Sessões únicas", df["session_id"].nunique())
