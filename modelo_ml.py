@@ -4,11 +4,11 @@ modelo_ml.py — Modelos de Machine Learning para o Totem Flexmedia (Sprint 3).
 Modelos treinados:
   1. Classificador de Engajamento (Random Forest)
      Target: ALTO / BAIXO  com base em múltiplas features
-     Features: dwell_ms, hora_sessao, screen_id (encoded), pos_na_sessao
+     Features: dwell_ms, hora_sessao, screen_enc, pos_na_sessao, dia_enc, perfil_enc
 
   2. Preditor de Próxima Tela (Random Forest Multiclass)
      Target: qual será a próxima tela visitada
-     Features: screen_id (encoded), dwell_ms, hora_sessao
+     Features: screen_enc, dwell_ms, hora_sessao, pos_na_sessao, dia_enc, perfil_enc
 
 Saídas:
   - Métricas completas no terminal (acurácia, precisão, recall, F1, matriz de confusão)
@@ -58,6 +58,13 @@ def load_and_engineer(path: Path) -> pd.DataFrame:
             "Friday": 4, "Saturday": 5, "Sunday": 6}
     df["dia_enc"] = df["dia_semana"].map(dias).fillna(0).astype(int)
 
+    # Encoding do perfil do usuário (se disponível)
+    if "perfil_usuario" in df.columns:
+        le_perfil = LabelEncoder()
+        df["perfil_enc"] = le_perfil.fit_transform(df["perfil_usuario"].fillna("desconhecido"))
+    else:
+        df["perfil_enc"] = 0  # fallback: coluna ausente em dados legados
+
     # Próxima tela (dentro da mesma sessão)
     df["proxima_tela"] = (
         df.groupby("session_id")["screen_id"].shift(-1)
@@ -67,7 +74,7 @@ def load_and_engineer(path: Path) -> pd.DataFrame:
     mediana = df["dwell_ms"].median()
     df["engajamento"] = (df["dwell_ms"] >= mediana).astype(int)  # 1=ALTO, 0=BAIXO
 
-    return df, le_screen
+    return df, le_screen  # le_screen mantido para compatibilidade com dashboard
 
 
 # ─────────────────────── Modelo 1: Classificador de Engajamento ───────────────────────
@@ -77,7 +84,7 @@ def treinar_engajamento(df: pd.DataFrame) -> dict:
     Treina Random Forest para classificar ALTO (1) vs BAIXO (0) engajamento.
     Features: dwell_ms, hora_sessao, screen_enc, pos_na_sessao, dia_enc
     """
-    features = ["dwell_ms", "hora_sessao", "screen_enc", "pos_na_sessao", "dia_enc"]
+    features = ["dwell_ms", "hora_sessao", "screen_enc", "pos_na_sessao", "dia_enc", "perfil_enc"]
     X = df[features]
     y = df["engajamento"]
 
@@ -124,7 +131,7 @@ def treinar_proxima_tela(df: pd.DataFrame) -> dict:
     le_prox = LabelEncoder()
     df_model["proxima_enc"] = le_prox.fit_transform(df_model["proxima_tela"])
 
-    features = ["screen_enc", "dwell_ms", "hora_sessao", "pos_na_sessao", "dia_enc"]
+    features = ["screen_enc", "dwell_ms", "hora_sessao", "pos_na_sessao", "dia_enc", "perfil_enc"]
     X = df_model[features]
     y = df_model["proxima_enc"]
 

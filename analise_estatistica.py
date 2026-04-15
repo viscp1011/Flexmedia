@@ -8,6 +8,7 @@ Gera gráficos salvos em /graficos/:
   4. Padrão temporal: acessos por hora do dia (lineplot)
   5. Heatmap: hora × tela (quantidade de acessos)
   6. Distribuição de engajamento por tela (stacked bar)
+  7. Distribuição de perfis de usuário (pie + bar)
 
 Usa: dados_simulados.csv (fallback quando Oracle indisponível)
 """
@@ -177,6 +178,55 @@ def plot_engajamento_por_tela(df: pd.DataFrame) -> None:
     print(f"[analise] Salvo: {path.name}")
 
 
+def plot_perfis_usuario(df: pd.DataFrame) -> None:
+    """Pie + bar mostrando distribuição de sessões por perfil de usuário."""
+    if "perfil_usuario" not in df.columns:
+        print("[analise] Coluna 'perfil_usuario' não encontrada — pulando gráfico.")
+        return
+
+    # Conta sessões únicas por perfil (não eventos)
+    perfis = (df.drop_duplicates("session_id")
+                .groupby("perfil_usuario")
+                .size()
+                .sort_values(ascending=False))
+
+    CORES_PERFIL = {
+        "engajado":   "#7ED321",
+        "curioso":    "#4C9BE8",
+        "passante":   "#F5A623",
+        "comparador": "#9B59B6",
+    }
+    cores = [CORES_PERFIL.get(p, "#AAAAAA") for p in perfis.index]
+
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5))
+
+    # Pie chart
+    wedges, texts, autotexts = ax1.pie(
+        perfis.values, labels=perfis.index, colors=cores,
+        autopct="%1.1f%%", startangle=140,
+        wedgeprops={"edgecolor": "white", "linewidth": 1.5}
+    )
+    for t in autotexts:
+        t.set_fontsize(10)
+    ax1.set_title("Distribuição de Perfis de Usuário\n(por sessão)", fontsize=12, fontweight="bold")
+
+    # Bar chart com contagem absoluta
+    bars = ax2.bar(perfis.index, perfis.values, color=cores, edgecolor="white", width=0.55)
+    ax2.bar_label(bars, fmt="%d sessões", fontsize=10, padding=4)
+    ax2.set_title("Sessões por Perfil de Usuário", fontsize=12, fontweight="bold")
+    ax2.set_xlabel("Perfil")
+    ax2.set_ylabel("Nº de Sessões")
+    ax2.set_ylim(0, perfis.max() * 1.18)
+
+    plt.suptitle("Análise de Perfis Comportamentais — Totem Flexmedia",
+                 fontsize=13, fontweight="bold", y=1.01)
+    plt.tight_layout()
+    path = OUTPUT_DIR / "07_perfis_usuario.png"
+    fig.savefig(path, dpi=150, bbox_inches="tight")
+    plt.close(fig)
+    print(f"[analise] Salvo: {path.name}")
+
+
 def print_resumo(df: pd.DataFrame) -> None:
     print("\n" + "═" * 55)
     print("  RESUMO ESTATÍSTICO — TOTEM FLEXMEDIA")
@@ -209,4 +259,5 @@ if __name__ == "__main__":
     plot_acessos_por_hora(df)
     plot_heatmap_hora_tela(df)
     plot_engajamento_por_tela(df)
+    plot_perfis_usuario(df)
     print(f"\n[analise] Todos os gráficos salvos em: {OUTPUT_DIR}/")
