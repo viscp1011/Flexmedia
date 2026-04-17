@@ -15,6 +15,9 @@
 ## 👨‍🎓 Integrantes:
 - Vitório Stevanatto Compri Paciulo — RM567895
 
+## LINK PARA O VÍDEO:
+https://youtu.be/cymtxyTF0GA
+
 
 ## 📜 Descrição
 
